@@ -9,19 +9,10 @@ var boss_room: int = -1
 func _init(n: int):
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	var adjecent_rooms := [] + adjecent_rooms_for([0, 0])
 	rooms = [[0, 0]]
-	while len(rooms) < n:
-		var random_new_room_id := rng.randi() % len(adjecent_rooms)
-		var new_room = adjecent_rooms[random_new_room_id]
-		if neighbours_count(new_room, rooms) <= 2:
-			adjecent_rooms.remove(random_new_room_id)
-			rooms.append(new_room)
-			
-			var new_adjecent_rooms := adjecent_rooms_for(new_room)
-			for new_adj_room in new_adjecent_rooms:
-				if not (new_adj_room in rooms) and not (new_adj_room in adjecent_rooms):
-					adjecent_rooms.append(new_adj_room)
+	for i in range(n - 1):
+		var adj_nodes := _all_adjecent_rooms()
+		rooms.append(adj_nodes[rng.randi() % adj_nodes.size()])
 	set_boss_room()
 
 func get_start_room() -> int:
@@ -38,38 +29,74 @@ func set_boss_room() -> void:
 			var room = rooms[i]
 			var curr_pos := Vector2(room[0], room[1])
 			var new_dist = start_pos.distance_to(curr_pos)
-			if new_dist > max_dist and plus_shape_neighbours_count(room, rooms) == 1:
+			if new_dist > max_dist and _neighbours(room) == 1:
 				max_dist = new_dist
 				boss_room = i
 
-func adjecent_rooms_for(room: Array) -> Array:
+func _all_adjecent_rooms() -> Array:
+	var adj_rooms = []
+	for room in rooms:
+		var new_adj_rooms := _adjecent_rooms(room)
+		for new_adj_room in new_adj_rooms:
+			var not_in_rooms: bool = not new_adj_room in rooms
+			var not_in_adj_rooms: bool = not new_adj_room in adj_rooms
+			var doesnt_support: bool = not _supports_pattern(new_adj_room)
+			if not_in_rooms and not_in_adj_rooms and doesnt_support:
+				adj_rooms.append(new_adj_room)
+	return adj_rooms
+
+func _adjecent_rooms(room: Array) -> Array:
 	return [
-		[room[0] - 1, room[1]],
-		[room[0] + 1, room[1]],
-		[room[0], room[1] - 1],
-		[room[0], room[1] + 1]
+		_left(room),
+		_right(room),
+		_up(room),
+		_down(room)
 	]
 
-func plus_shape_neighbours_count(room: Array, _rooms: Array) -> int:
-	var rooms_number := 0
-	
-	rooms_number += 1 if [room[0], room[1] - 1] in _rooms else 0 # u
-	rooms_number += 1 if [room[0] - 1, room[1]] in _rooms else 0 # l
-	rooms_number += 1 if [room[0] + 1, room[1]] in _rooms else 0 # r
-	rooms_number += 1 if [room[0], room[1] + 1] in _rooms else 0 # d
-	
-	return rooms_number
+func _supports_pattern(room: Array) -> bool:
+	return _supports_pattern1(room) or \
+		   _supports_pattern2(room) or \
+		   _supports_pattern3(room) or \
+		   _supports_pattern4(room)
 
-func neighbours_count(room: Array, _rooms: Array) -> int:
-	var rooms_number := 0
+func _supports_pattern1(room: Array) -> bool:
+	return _left(room) in rooms and \
+		   _left(_up(room)) in rooms and \
+		   _up(room) in rooms
+
+func _supports_pattern2(room: Array) -> bool:
+	return _right(room) in rooms and \
+		   _right(_up(room)) in rooms and \
+		   _up(room) in rooms
+
+func _supports_pattern3(room: Array) -> bool:
+	return _left(room) in rooms and \
+		   _left(_down(room)) in rooms and \
+		   _down(room) in rooms
+
+func _supports_pattern4(room: Array) -> bool:
+	return _right(room) in rooms and \
+		   _right(_down(room)) in rooms and \
+		   _down(room) in rooms
+
+func _neighbours(room: Array) -> int:
+	var result := 0
 	
-	rooms_number += 1 if [room[0] - 1, room[1] - 1] in _rooms else 0 # lu
-	rooms_number += 1 if [room[0], room[1] - 1] in _rooms else 0 # u
-	rooms_number += 1 if [room[0] + 1, room[1] - 1] in _rooms else 0 # ru
-	rooms_number += 1 if [room[0] - 1, room[1]] in _rooms else 0 # l
-	rooms_number += 1 if [room[0] + 1, room[1]] in _rooms else 0 # r
-	rooms_number += 1 if [room[0] - 1, room[1] + 1] in _rooms else 0 # ld
-	rooms_number += 1 if [room[0], room[1] + 1] in _rooms else 0 # d
-	rooms_number += 1 if [room[0] + 1, room[1] + 1] in _rooms else 0 # rd
+	result += 1 if _left(room) in rooms else 0
+	result += 1 if _right(room) in rooms else 0
+	result += 1 if _up(room) in rooms else 0
+	result += 1 if _down(room) in rooms else 0
 	
-	return rooms_number
+	return result
+
+func _left(room: Array) -> Array:
+	return [room[0] - 1, room[1]]
+
+func _right(room: Array) -> Array:
+	return [room[0] + 1, room[1]]
+
+func _up(room: Array) -> Array:
+	return [room[0], room[1] + 1]
+
+func _down(room: Array) -> Array:
+	return [room[0], room[1] - 1]
