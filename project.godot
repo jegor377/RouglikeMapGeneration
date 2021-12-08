@@ -21,7 +21,7 @@ _global_script_class_icons={
 [application]
 
 config/name="RougelikeMapGeneration"
-run/main_scene="res://MapGenerator.tscn"
+run/main_scene="res://3DMap.tscn"
 config/icon="res://icon.png"
 
 [physics]
